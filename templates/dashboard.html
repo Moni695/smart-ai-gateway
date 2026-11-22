@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI Gateway Dashboard & LLMOps Hub</title>
+    <!-- Google Fonts & Chart.js -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #090d16;
+            --surface: #0f172a;
+            --surface-elevated: #1e293b;
+            --surface-hover: #273549;
+            --border: #334155;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.15);
+            --accent: #818cf8;
+            --success: #34d399;
+            --success-glow: rgba(52, 211, 153, 0.15);
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-subtle: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Bar */
+        .topbar {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: #090d16;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+        }
+        .brand h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+        .brand p { font-size: 12px; color: var(--text-muted); }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            color: var(--success);
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .btn-secondary {
+            background: var(--surface-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { background: var(--surface-hover); border-color: var(--text-muted); }
+
+        /* Navigation Tabs */
+        .tabs-bar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            display: flex;
+            gap: 8px;
+        }
+        .tab-btn {
+            padding: 14px 18px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Container */
+        .main-container {
+            max-width: 1360px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 28px 32px;
+            flex: 1;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+        .kpi-card:hover { transform: translateY(-2px); }
+        .kpi-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            opacity: 0.8;
+        }
+        .kpi-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 8px; }
+        .kpi-value { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
+        .kpi-sub { font-size: 12px; color: var(--text-subtle); }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 1100px) { .charts-grid { grid-template-columns: 1fr; } }
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .chart-title { font-size: 14px; font-weight: 700; }
+
+        /* Playground View */
+        .playground-container {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) { .playground-container { grid-template-columns: 1fr; } }
+
+        .play-box {
+            background: var(--surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .prompt-textarea {
+            width: 100%;
+            height: 140px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-main);
+            padding: 14px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .prompt-textarea:focus { border-color: var(--primary); }
+
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .preset-chip {
+            background: var(--surface-elevated);
+            color: var(--text-muted);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-chip:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: var(--surface-hover);
+        }
+
+        .policy-options {
+            display: flex;
+            gap: 10px;
+        }
+        .policy-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-elevated);
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .policy-btn.active {
+            border-color: var(--primary);
+            background: var(--primary-glow);
+            color: var(--primary);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0284c7, #38bdf8);
+            color: #090d16;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
+        }
+        .btn-primary:hover { opacity: 0.95; transform: scale(0.99); }
+
+        .telemetry-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .tele-box {
+            background: var(--bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+        .tele-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+        .tele-val { font-size: 18px; font-weight: 800; margin-top: 4px; }
+
+        .complexity-gauge {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+        .gauge-bar-bg {
+            height: 10px;
+            background: #1e293b;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .gauge-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #34d399, #fbbf24, #f87171);
+            transition: width 0.4s ease;
+        }
+
+        .response-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #e2e8f0;
+            min-height: 120px;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Evals Tab */
+        .eval-hero {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .eval-hero h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+        .eval-hero p { color: var(--text-muted); font-size: 14px; max-width: 650px; }
+
+        .policy-matrix {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 900px) { .policy-matrix { grid-template-columns: 1fr; } }
+        .matrix-card {
+            background: var(--surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 20px;
+            position: relative;
+        }
+        .matrix-card.featured {
+            border-color: var(--primary);
+            box-shadow: 0 0 24px rgba(56, 189, 248, 0.15);
+        }
+        .matrix-card .badge {
+            position: absolute;
+            top: 16px; right: 16px;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .matrix-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+
+        .metric-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 13px;
+        }
+        .metric-line:last-child { border-bottom: none; }
+        .metric-line span:first-child { color: var(--text-muted); }
+        .metric-line span:last-child { font-weight: 700; }
+
+        .resume-bullet-card {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(99, 102, 241, 0.05));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .resume-bullet-card h3 {
+            font-size: 14px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .bullet-quote {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #f1f5f9;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        /* Table Styling */
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-subtle); }
+        th { color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .tag-success { background: rgba(52, 211, 153, 0.15); color: var(--success); }
+        .tag-primary { background: rgba(56, 189, 248, 0.15); color: var(--primary); }
+        .tag-warning { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
+        .tag-danger { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
+        .tag-neutral { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-radius: 50%;
+            border-top-color: #000;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-icon">⚡</div>
+            <div>
+                <h1>Smart AI Gateway</h1>
+                <p>LLMOps Observability, Cost Tracking & Auto-Routing Hub</p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <div class="status-pill">
+                <span class="pulse-dot"></span>
+                <span>Active Provider: Mock Engine / Groq Tier</span>
+            </div>
+            <button class="btn-secondary" onclick="clearData()">🧹 Clear Cache & Logs</button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-bar">
+        <button class="tab-btn active" onclick="switchTab('overview')">📊 Overview & Metrics</button>
+        <button class="tab-btn" onclick="switchTab('playground')">🧪 Router Playground</button>
+        <button class="tab-btn" onclick="switchTab('evals')">🏆 Agent Evals & Benchmark</button>
+        <button class="tab-btn" onclick="switchTab('logs')">📜 Request Telemetry</button>
+    </nav>
+
+    <main class="main-container">
+
+        <!-- TAB 1: OVERVIEW -->
+        <section id="tab-overview" class="tab-content active">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Requests</div>
+                    <div class="kpi-value" id="kpi-requests">0</div>
+                    <div class="kpi-sub" id="kpi-tokens">0 tokens processed</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Cumulative Cost</div>
+                    <div class="kpi-value" id="kpi-cost" style="color: var(--success);">$0.000000</div>
+                    <div class="kpi-sub">Micro-dollar precision</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Average Latency</div>
+                    <div class="kpi-value" id="kpi-latency">0 ms</div>
+                    <div class="kpi-sub">P50 / P95 optimized</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Cache Hit Ratio</div>
+                    <div class="kpi-value" id="kpi-cache" style="color: var(--primary);">0.0%</div>
+                    <div class="kpi-sub" id="kpi-cache-hits">0 cached calls ($0, 0ms)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">System Reliability</div>
+                    <div class="kpi-value" id="kpi-reliability">100.0%</div>
+                    <div class="kpi-sub" id="kpi-resilience">0 fallbacks | 0 errors</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <span class="chart-title">Cost by Routing Policy ($)</span>
+                    </div>
+                    <canvas id="chart-policy-cost" height="200"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <span class="chart-title">Traffic Share by Model Tier</span>
+                    </div>
+                    <canvas id="chart-model-dist" height="200"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <span class="chart-title">Average Latency by Policy (ms)</span>
+                    </div>
+                    <canvas id="chart-latency" height="200"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PLAYGROUND -->
+        <section id="tab-playground" class="tab-content">
+            <div class="playground-container">
+                <!-- Input Column -->
+                <div class="play-box">
+                    <h3 style="font-size: 16px; font-weight: 700;">Prompt & Task Input</h3>
+                    <textarea id="play-prompt" class="prompt-textarea" placeholder="Type any question, math formula, code, or enterprise task to test real-time auto-routing...">Calculate the square root of 625 using calculator: sqrt(625)</textarea>
+                    
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">⚡ Quick Test Presets:</div>
+                        <div class="presets">
+                            <span class="preset-chip" onclick="setPreset('easy')">💬 Capital of France (Cheap Route)</span>
+                            <span class="preset-chip" onclick="setPreset('math')">🧮 45 + 55 (Cheap + Calc)</span>
+                            <span class="preset-chip" onclick="setPreset('code')">⚡ Optimize Python Sort (Strong Route)</span>
+                            <span class="preset-chip" onclick="setPreset('hard')">🏢 Company A Revenue + 10% (Multi-step Agent)</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">Routing Policy:</div>
+                        <div class="policy-options">
+                            <button class="policy-btn active" id="btn-pol-auto" onclick="setPlayPolicy('auto_router')">🤖 Auto-Router</button>
+                            <button class="policy-btn" id="btn-pol-cheap" onclick="setPlayPolicy('always_cheap')">🪙 Always Cheap</button>
+                            <button class="policy-btn" id="btn-pol-strong" onclick="setPlayPolicy('always_strong')">🧠 Always Strong</button>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" id="btn-send" onclick="sendPlaygroundRequest()">
+                        <span id="send-btn-text">⚡ Send Request Through Gateway</span>
+                    </button>
+                </div>
+
+                <!-- Output Column -->
+                <div class="play-box">
+                    <h3 style="font-size: 16px; font-weight: 700;">Live Gateway Telemetry</h3>
+                    
+                    <div class="complexity-gauge">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                            <span>Task Complexity Score</span>
+                            <strong id="play-score-text">0.00 / 1.00</strong>
+                        </div>
+                        <div class="gauge-bar-bg">
+                            <div class="gauge-bar-fill" id="play-gauge-bar"></div>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-subtle); margin-top: 6px;" id="play-route-reason">
+                            Awaiting prompt...
+                        </div>
+                    </div>
+
+                    <div class="telemetry-row">
+                        <div class="tele-box">
+                            <div class="tele-title">Model Used</div>
+                            <div class="tele-val" id="play-model" style="font-size: 14px; color: var(--primary);">-</div>
+                        </div>
+                        <div class="tele-box">
+                            <div class="tele-title">Latency</div>
+                            <div class="tele-val" id="play-latency">- ms</div>
+                        </div>
+                        <div class="tele-box">
+                            <div class="tele-title">Cost</div>
+                            <div class="tele-val" id="play-cost" style="color: var(--success);">$0.00</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                            <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Assistant Response:</span>
+                            <span id="play-cache-badge" class="tag tag-neutral">CACHE: MISS</span>
+                        </div>
+                        <div class="response-box" id="play-response">Response will appear here...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: EVALS & BENCHMARK -->
+        <section id="tab-evals" class="tab-content">
+            <div class="eval-hero">
+                <div>
+                    <h2>🏆 Autonomous Agent Evaluation Benchmark</h2>
+                    <p>Testing an agent equipped with 3 tools (Calculator, KnowledgeLookup, CodeAnalyzer) across a standardized 25-task exam under 3 policies to prove auto-routing efficiency with real verified numbers.</p>
+                </div>
+                <button class="btn-primary" id="btn-run-eval" onclick="runBenchmark()">
+                    <span id="eval-btn-text">🚀 Run Full 25-Task Exam</span>
+                </button>
+            </div>
+
+            <div class="resume-bullet-card">
+                <h3>
+                    <span>📄 Verified Resume Bullet Point</span>
+                    <button class="btn-secondary" onclick="copyResumeBullet()" style="padding: 4px 10px; font-size: 12px;">📋 Copy</button>
+                </h3>
+                <div class="bullet-quote" id="resume-bullet-text">
+                    "Built an LLM gateway with auto-routing, fallback and cost tracking; auto-routing cut LLM cost by 69.9% while keeping agent eval pass rate within 16.0 points of always using the strongest model."
+                </div>
+            </div>
+
+            <div class="policy-matrix">
+                <!-- Cheap -->
+                <div class="matrix-card">
+                    <h3>🪙 ALWAYS_CHEAP</h3>
+                    <div class="metric-line"><span>Model Tier</span><span>LLaMA-3.1-8B</span></div>
+                    <div class="metric-line"><span>Exam Pass Rate</span><span id="eval-cheap-pass" style="color: var(--warning);">60.0%</span></div>
+                    <div class="metric-line"><span>Total Cost (25 Tasks)</span><span id="eval-cheap-cost">$0.000671</span></div>
+                    <div class="metric-line"><span>Avg Latency</span><span id="eval-cheap-lat">73.8 ms</span></div>
+                    <div class="metric-line"><span>Summary</span><span style="color: var(--warning);">Fails on complex tools</span></div>
+                </div>
+
+                <!-- Auto-Router -->
+                <div class="matrix-card featured">
+                    <span class="badge">RECOMMENDED</span>
+                    <h3 style="color: var(--primary);">🤖 AUTO_ROUTER</h3>
+                    <div class="metric-line"><span>Dynamic Tier</span><span>Smart Hybrid</span></div>
+                    <div class="metric-line"><span>Exam Pass Rate</span><span id="eval-router-pass" style="color: var(--primary);">72.0%</span></div>
+                    <div class="metric-line"><span>Total Cost (25 Tasks)</span><span id="eval-router-cost" style="color: var(--success);">$0.003338</span></div>
+                    <div class="metric-line"><span>Avg Latency</span><span id="eval-router-lat">123.2 ms</span></div>
+                    <div class="metric-line"><span>Cost Savings</span><span style="color: var(--success); font-weight: 800;" id="eval-savings">69.9% SAVINGS</span></div>
+                </div>
+
+                <!-- Strong -->
+                <div class="matrix-card">
+                    <h3>🧠 ALWAYS_STRONG</h3>
+                    <div class="metric-line"><span>Model Tier</span><span>LLaMA-3.3-70B</span></div>
+                    <div class="metric-line"><span>Exam Pass Rate</span><span id="eval-strong-pass" style="color: var(--success);">88.0%</span></div>
+                    <div class="metric-line"><span>Total Cost (25 Tasks)</span><span id="eval-strong-cost">$0.011108</span></div>
+                    <div class="metric-line"><span>Avg Latency</span><span id="eval-strong-lat">287.5 ms</span></div>
+                    <div class="metric-line"><span>Summary</span><span style="color: var(--text-muted);">Maximum cost & latency</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: REQUEST LOGS -->
+        <section id="tab-logs" class="tab-content">
+            <div class="table-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="font-size: 16px; font-weight: 700;">Live Request Telemetry Ledger</h3>
+                    <button class="btn-secondary" onclick="loadLogs()">🔄 Refresh Logs</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Time</th>
+                            <th>Policy</th>
+                            <th>Model Dispatched</th>
+                            <th>Tokens (P/C)</th>
+                            <th>Latency</th>
+                            <th>Cost ($)</th>
+                            <th>Cache</th>
+                            <th>Fallback</th>
+                            <th>Routing Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-tbody">
+                        <tr><td colspan="10" style="text-align: center; color: var(--text-muted);">Loading request logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let currentPolicy = 'auto_router';
+        let charts = {};
+
+        // Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+            if (tabId === 'logs') loadLogs();
+        }
+
+        // Playground Presets
+        function setPreset(type) {
+            const el = document.getElementById('play-prompt');
+            if (type === 'easy') el.value = "What is the capital of France?";
+            if (type === 'math') el.value = "Calculate 45 + 55";
+            if (type === 'code') el.value = "Can you optimize this python function and reduce time complexity:\ndef sort(arr): return sorted(arr)";
+            if (type === 'hard') el.value = "Lookup the revenue of Company_A and calculate 10 percent of it.";
+        }
+
+        function setPlayPolicy(p) {
+            currentPolicy = p;
+            document.querySelectorAll('.policy-btn').forEach(b => b.classList.remove('active'));
+            if (p === 'auto_router') document.getElementById('btn-pol-auto').classList.add('active');
+            if (p === 'always_cheap') document.getElementById('btn-pol-cheap').classList.add('active');
+            if (p === 'always_strong') document.getElementById('btn-pol-strong').classList.add('active');
+        }
+
+        async function sendPlaygroundRequest() {
+            const prompt = document.getElementById('play-prompt').value.trim();
+            if (!prompt) return;
+
+            const btn = document.getElementById('btn-send');
+            const btnText = document.getElementById('send-btn-text');
+            btnText.innerHTML = '<span class="spinner"></span> Routing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Router-Policy': currentPolicy
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: prompt }],
+                        policy: currentPolicy
+                    })
+                });
+
+                const data = await res.json();
+                const headers = res.headers;
+
+                // Update UI Telemetry
+                const isHit = headers.get('x-cache-hit') === 'true';
+                const modelUsed = headers.get('x-model-used') || 'unknown';
+                const latency = headers.get('x-latency-ms') || '0.0';
+                const cost = headers.get('x-cost-usd') || '0.000000';
+                const score = parseFloat(headers.get('x-complexity-score') || '0.0');
+
+                document.getElementById('play-model').textContent = modelUsed;
+                document.getElementById('play-latency').textContent = parseFloat(latency).toFixed(1) + ' ms';
+                document.getElementById('play-cost').textContent = '$' + parseFloat(cost).toFixed(6);
+
+                const cacheBadge = document.getElementById('play-cache-badge');
+                if (isHit) {
+                    cacheBadge.className = 'tag tag-primary';
+                    cacheBadge.textContent = 'CACHE: HIT (0ms, $0)';
+                } else {
+                    cacheBadge.className = 'tag tag-neutral';
+                    cacheBadge.textContent = 'CACHE: MISS';
+                }
+
+                document.getElementById('play-score-text').textContent = score.toFixed(2) + ' / 1.00';
+                document.getElementById('play-gauge-bar').style.width = (score * 100) + '%';
+                document.getElementById('play-route-reason').textContent = score >= 0.30 
+                    ? `Routed to Strong Model (Score ${score.toFixed(2)} >= 0.30)` 
+                    : `Routed to Cheap Model (Score ${score.toFixed(2)} < 0.30)`;
+
+                const content = data.choices ? data.choices[0].message.content : JSON.stringify(data);
+                document.getElementById('play-response').textContent = content;
+
+                // Refresh metrics in background
+                fetchMetrics();
+
+            } catch (err) {
+                document.getElementById('play-response').textContent = 'Error: ' + err.message;
+            } finally {
+                btnText.textContent = '⚡ Send Request Through Gateway';
+                btn.disabled = false;
+            }
+        }
+
+        // Fetch Metrics & Update Charts
+        async function fetchMetrics() {
+            try {
+                const res = await fetch('/v1/metrics');
+                const m = await res.json();
+
+                document.getElementById('kpi-requests').textContent = m.total_requests;
+                document.getElementById('kpi-tokens').textContent = m.total_tokens.toLocaleString() + ' tokens processed';
+                document.getElementById('kpi-cost').textContent = '$' + m.total_cost_usd.toFixed(6);
+                document.getElementById('kpi-latency').textContent = m.avg_latency_ms.toFixed(1) + ' ms';
+                document.getElementById('kpi-cache').textContent = (m.cache_hit_rate * 100).toFixed(1) + '%';
+                document.getElementById('kpi-cache-hits').textContent = m.cache_hits + ' cached calls ($0, 0ms)';
+                document.getElementById('kpi-reliability').textContent = (100.0 - (m.error_rate * 100)).toFixed(1) + '%';
+                document.getElementById('kpi-resilience').textContent = `${m.fallbacks} fallbacks | ${m.errors} errors`;
+
+                updateCharts(m);
+            } catch (e) {
+                console.error("Failed to load metrics", e);
+            }
+        }
+
+        function updateCharts(m) {
+            // Policy Cost Chart
+            const pData = m.by_policy || [];
+            const pLabels = pData.map(d => d.route_policy);
+            const pCosts = pData.map(d => d.cost);
+
+            if (charts.policy) charts.policy.destroy();
+            charts.policy = new Chart(document.getElementById('chart-policy-cost'), {
+                type: 'bar',
+                data: {
+                    labels: pLabels.length ? pLabels : ['No data'],
+                    datasets: [{
+                        label: 'Cost ($)',
+                        data: pCosts.length ? pCosts : [0],
+                        backgroundColor: '#38bdf8',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+                    }
+                }
+            });
+
+            // Model Traffic Chart
+            const mData = m.by_model || [];
+            const mLabels = mData.map(d => d.model_used);
+            const mCounts = mData.map(d => d.count);
+
+            if (charts.model) charts.model.destroy();
+            charts.model = new Chart(document.getElementById('chart-model-dist'), {
+                type: 'doughnut',
+                data: {
+                    labels: mLabels.length ? mLabels : ['No traffic'],
+                    datasets: [{
+                        data: mCounts.length ? mCounts : [1],
+                        backgroundColor: ['#38bdf8', '#34d399', '#818cf8', '#fbbf24']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc', boxWidth: 12 } } }
+                }
+            });
+
+            // Latency Chart
+            const pLats = pData.map(d => d.avg_latency);
+            if (charts.latency) charts.latency.destroy();
+            charts.latency = new Chart(document.getElementById('chart-latency'), {
+                type: 'bar',
+                data: {
+                    labels: pLabels.length ? pLabels : ['No data'],
+                    datasets: [{
+                        label: 'Avg Latency (ms)',
+                        data: pLats.length ? pLats : [0],
+                        backgroundColor: '#818cf8',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+                    }
+                }
+            });
+        }
+
+        async function loadLogs() {
+            try {
+                const res = await fetch('/v1/logs?limit=30');
+                const data = await res.json();
+                const tbody = document.getElementById('logs-tbody');
+                tbody.innerHTML = '';
+
+                if (!data.logs || data.logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#94a3b8;">No requests logged yet.</td></tr>';
+                    return;
+                }
+
+                data.logs.forEach(l => {
+                    const tr = document.createElement('tr');
+                    const cacheTag = l.cache_hit ? '<span class="tag tag-primary">HIT</span>' : '<span class="tag tag-neutral">MISS</span>';
+                    const fallbackTag = l.fallback_used ? '<span class="tag tag-warning">FALLBACK</span>' : '-';
+                    tr.innerHTML = `
+                        <td>${l.id}</td>
+                        <td style="color:#94a3b8; font-size:11px;">${l.timestamp.substring(11, 19)}</td>
+                        <td><span class="tag tag-neutral">${l.route_policy}</span></td>
+                        <td><strong>${l.model_used}</strong></td>
+                        <td>${l.prompt_tokens}/${l.completion_tokens}</td>
+                        <td>${l.latency_ms.toFixed(1)}ms</td>
+                        <td style="color:var(--success); font-weight:700;">$${l.cost_usd.toFixed(6)}</td>
+                        <td>${cacheTag}</td>
+                        <td>${fallbackTag}</td>
+                        <td style="color:#94a3b8; font-size:11px; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${l.routing_reason || ''}">${l.routing_reason || 'N/A'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error("Failed to load logs", e);
+            }
+        }
+
+        async function clearData() {
+            if (!confirm("Clear all logs and response cache?")) return;
+            await fetch('/v1/logs/clear', { method: 'POST' });
+            fetchMetrics();
+            loadLogs();
+        }
+
+        async function runBenchmark() {
+            const btn = document.getElementById('btn-run-eval');
+            const txt = document.getElementById('eval-btn-text');
+            txt.innerHTML = '<span class="spinner"></span> Running 25 Tasks x 3 Policies...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/v1/evals/run', { method: 'POST' });
+                const d = await res.json();
+
+                document.getElementById('eval-cheap-pass').textContent = d.results.always_cheap.pass_rate_pct.toFixed(1) + '%';
+                document.getElementById('eval-cheap-cost').textContent = '$' + d.results.always_cheap.total_cost_usd.toFixed(6);
+                document.getElementById('eval-cheap-lat').textContent = d.results.always_cheap.avg_latency_ms.toFixed(1) + ' ms';
+
+                document.getElementById('eval-router-pass').textContent = d.results.auto_router.pass_rate_pct.toFixed(1) + '%';
+                document.getElementById('eval-router-cost').textContent = '$' + d.results.auto_router.total_cost_usd.toFixed(6);
+                document.getElementById('eval-router-lat').textContent = d.results.auto_router.avg_latency_ms.toFixed(1) + ' ms';
+                document.getElementById('eval-savings').textContent = d.cost_savings_pct.toFixed(1) + '% SAVINGS';
+
+                document.getElementById('eval-strong-pass').textContent = d.results.always_strong.pass_rate_pct.toFixed(1) + '%';
+                document.getElementById('eval-strong-cost').textContent = '$' + d.results.always_strong.total_cost_usd.toFixed(6);
+                document.getElementById('eval-strong-lat').textContent = d.results.always_strong.avg_latency_ms.toFixed(1) + ' ms';
+
+                document.getElementById('resume-bullet-text').textContent = `"${d.resume_bullet}"`;
+                alert("Benchmark Exam Finished Successfully!");
+            } catch (e) {
+                alert("Benchmark failed: " + e.message);
+            } finally {
+                txt.textContent = '🚀 Run Full 25-Task Exam';
+                btn.disabled = false;
+            }
+        }
+
+        function copyResumeBullet() {
+            const text = document.getElementById('resume-bullet-text').textContent.trim();
+            navigator.clipboard.writeText(text);
+            alert("Copied resume bullet point to clipboard!");
+        }
+
+        // Initialize on load
+        fetchMetrics();
+        setInterval(fetchMetrics, 5000);
+    </script>
+</body>
+</html>

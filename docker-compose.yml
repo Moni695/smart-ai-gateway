@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  gateway:
+    build: .
+    container_name: ai_gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - DATABASE_PATH=/data/gateway.db
+    volumes:
+      - gateway_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  gateway_data:

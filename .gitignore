@@ -1,0 +1,30 @@
+# Environment variables & secrets
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Database & Logs
+*.db
+*.sqlite3
+gateway.db
+*.log
+
+# Testing & wrappers
+.pytest_cache/
+.coverage
+htmlcov/
+powershell.cmd
+
+# OS artifacts
+.DS_Store
+Thumbs.db
